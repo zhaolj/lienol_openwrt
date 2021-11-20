@@ -270,10 +270,10 @@ endef
 TARGET_DEVICES += buffalo_wtr-m2133hp
 
 define Device/cellc_rtl30vw
-	KERNEL_SUFFIX := -fit-uImage.itb
+	KERNEL_SUFFIX := -fit-zImage.itb
 	KERNEL_INITRAMFS = kernel-bin | gzip | fit gzip $$(DTS_DIR)/$$(DEVICE_DTS).dtb
-	KERNEL = kernel-bin | gzip | fit gzip $$(DTS_DIR)/$$(DEVICE_DTS).dtb | uImage lzma | pad-to 2048
-	KERNEL_NAME := Image
+	KERNEL = kernel-bin | fit none $$(DTS_DIR)/$$(DEVICE_DTS).dtb | uImage lzma | pad-to 2048
+	KERNEL_NAME := zImage
 	KERNEL_IN_UBI :=
 	IMAGES := nand-factory.bin nand-sysupgrade.bin
 	IMAGE/nand-factory.bin := append-rootfshdr | append-ubi | qsdk-ipq-factory-nand-askey
@@ -354,6 +354,7 @@ define Device/compex_wpj428
 	IMAGE/sysupgrade.bin := append-kernel | append-rootfs | pad-rootfs | append-metadata
 	IMAGE/cpximg-6a04.bin := append-kernel | append-rootfs | pad-rootfs | mkmylofw_32m 0x8A2 3
 	DEVICE_PACKAGES := kmod-gpio-beeper
+	DEFAULT := n
 endef
 TARGET_DEVICES += compex_wpj428
 
@@ -373,6 +374,7 @@ define Device/devolo_magic-2-wifi-next
 	IMAGES := sysupgrade.bin
 	IMAGE/sysupgrade.bin := append-kernel | append-rootfs | pad-rootfs | append-metadata
 	DEVICE_PACKAGES := ipq-wifi-devolo_magic-2-wifi-next
+	DEFAULT := n
 endef
 TARGET_DEVICES += devolo_magic-2-wifi-next
 
@@ -465,6 +467,7 @@ define Device/engenius_emd1
 	IMAGES += factory.bin
 	IMAGE/sysupgrade.bin := append-kernel | append-rootfs | pad-rootfs | append-metadata
 	IMAGE/factory.bin := qsdk-ipq-factory-nor | check-size
+	DEVICE_PACKAGES := ipq-wifi-engenius_emd1
 endef
 TARGET_DEVICES += engenius_emd1
 
@@ -479,6 +482,8 @@ define Device/engenius_emr3500
 	IMAGES += factory.bin
 	IMAGE/sysupgrade.bin := append-kernel | append-rootfs | pad-rootfs | append-metadata
 	IMAGE/factory.bin := qsdk-ipq-factory-nor | check-size
+	DEVICE_PACKAGES := ipq-wifi-engenius_emr3500
+	DEFAULT := n
 endef
 TARGET_DEVICES += engenius_emr3500
 
@@ -539,7 +544,7 @@ endef
 TARGET_DEVICES += glinet_gl-ap1300
 
 define Device/glinet_gl-b1300
-	$(call Device/FitImage)
+	$(call Device/FitzImage)
 	DEVICE_VENDOR := GL.iNet
 	DEVICE_MODEL := GL-B1300
 	BOARD_NAME := gl-b1300
@@ -551,7 +556,7 @@ endef
 TARGET_DEVICES += glinet_gl-b1300
 
 define Device/glinet_gl-s1300
-	$(call Device/FitImage)
+	$(call Device/FitzImage)
 	DEVICE_VENDOR := GL.iNet
 	DEVICE_MODEL := GL-S1300
 	SOC := qcom-ipq4029
@@ -690,6 +695,64 @@ define Device/netgear_ex6150v2
 endef
 TARGET_DEVICES += netgear_ex6150v2
 
+define Device/netgear_orbi
+	$(call Device/DniImage)
+	SOC := qcom-ipq4019
+	DEVICE_VENDOR := NETGEAR
+	IMAGE/factory.img := append-kernel | pad-offset 128k 64 | \
+		append-uImage-fakehdr filesystem | pad-to $$$$(KERNEL_SIZE) | \
+		append-rootfs | pad-rootfs | netgear-dni
+	IMAGE/sysupgrade.bin/squashfs := append-rootfs | pad-to 64k | \
+		sysupgrade-tar rootfs=$$$$@ | append-metadata
+	DEVICE_PACKAGES := ath10k-firmware-qca9984-ct e2fsprogs kmod-fs-ext4 losetup
+endef
+
+define Device/netgear_rbx50
+	$(call Device/netgear_orbi)
+	NETGEAR_HW_ID := 29765352+0+4000+512+2x2+2x2+4x4
+	KERNEL_SIZE := 3932160
+	ROOTFS_SIZE := 32243712
+	IMAGE_SIZE := 36175872
+endef
+
+define Device/netgear_rbr50
+	$(call Device/netgear_rbx50)
+	DEVICE_MODEL := RBR50
+	DEVICE_VARIANT := v1
+	NETGEAR_BOARD_ID := RBR50
+endef
+TARGET_DEVICES += netgear_rbr50
+
+define Device/netgear_rbs50
+	$(call Device/netgear_rbx50)
+	DEVICE_MODEL := RBS50
+	DEVICE_VARIANT := v1
+	NETGEAR_BOARD_ID := RBS50
+endef
+TARGET_DEVICES += netgear_rbs50
+
+define Device/netgear_srx60
+	$(call Device/netgear_orbi)
+	NETGEAR_HW_ID := 29765352+0+4096+512+2x2+2x2+4x4
+	KERNEL_SIZE := 3932160
+	ROOTFS_SIZE := 32243712
+	IMAGE_SIZE := 36175872
+endef
+
+define Device/netgear_srr60
+	$(call Device/netgear_srx60)
+	DEVICE_MODEL := SRR60
+	NETGEAR_BOARD_ID := SRR60
+endef
+TARGET_DEVICES += netgear_srr60
+
+define Device/netgear_srs60
+	$(call Device/netgear_srx60)
+	DEVICE_MODEL := SRS60
+	NETGEAR_BOARD_ID := SRS60
+endef
+TARGET_DEVICES += netgear_srs60
+
 define Device/netgear_wac510
 	$(call Device/FitImage)
 	$(call Device/UbiFit)
@@ -745,23 +808,20 @@ define Device/p2w_r619ac
 	DEVICE_DTS_CONFIG := config@10
 	BLOCKSIZE := 128k
 	PAGESIZE := 2048
-	IMAGES += nand-factory.bin
-	IMAGE/nand-factory.bin := append-ubi | qsdk-ipq-factory-nand
 	DEVICE_PACKAGES := ipq-wifi-p2w_r619ac
 endef
-TARGET_DEVICES += p2w_r619ac
+
+define Device/p2w_r619ac-64m
+	$(call Device/p2w_r619ac)
+	DEVICE_VARIANT := 64M NAND
+	IMAGES += nand-factory.bin
+	IMAGE/nand-factory.bin := append-ubi | qsdk-ipq-factory-nand
+endef
+TARGET_DEVICES += p2w_r619ac-64m
 
 define Device/p2w_r619ac-128m
-	$(call Device/FitzImage)
-	$(call Device/UbiFit)
-	DEVICE_VENDOR := P&W
-	DEVICE_MODEL := R619AC
-	DEVICE_VARIANT := 128M
-	SOC := qcom-ipq4019
-	DEVICE_DTS_CONFIG := config@10
-	BLOCKSIZE := 128k
-	PAGESIZE := 2048
-	DEVICE_PACKAGES := ipq-wifi-p2w_r619ac
+	$(call Device/p2w_r619ac)
+	DEVICE_VARIANT := 128M NAND
 endef
 TARGET_DEVICES += p2w_r619ac-128m
 
@@ -777,7 +837,7 @@ define Device/plasmacloud_pa1200
 	IMAGES += factory.bin
 	IMAGE/factory.bin := append-rootfs | pad-rootfs | openmesh-image ce_type=PA1200
 	IMAGE/sysupgrade.bin/squashfs := append-rootfs | pad-rootfs | sysupgrade-tar rootfs=$$$$@ | append-metadata
-	DEVICE_PACKAGES := ipq-wifi-plasmacloud-pa1200
+	DEVICE_PACKAGES := ipq-wifi-plasmacloud_pa1200
 endef
 TARGET_DEVICES += plasmacloud_pa1200
 
@@ -793,7 +853,7 @@ define Device/plasmacloud_pa2200
 	IMAGES += factory.bin
 	IMAGE/factory.bin := append-rootfs | pad-rootfs | openmesh-image ce_type=PA2200
 	IMAGE/sysupgrade.bin/squashfs := append-rootfs | pad-rootfs | sysupgrade-tar rootfs=$$$$@ | append-metadata
-	DEVICE_PACKAGES := ath10k-firmware-qca9888-ct ipq-wifi-plasmacloud-pa2200
+	DEVICE_PACKAGES := ath10k-firmware-qca9888-ct ipq-wifi-plasmacloud_pa2200
 endef
 TARGET_DEVICES += plasmacloud_pa2200
 
@@ -809,6 +869,7 @@ define Device/qcom_ap-dk01.1-c1
 	IMAGE_SIZE := 26624k
 	$(call Device/FitImage)
 	IMAGE/sysupgrade.bin := append-kernel | pad-to $$$$(KERNEL_SIZE) | append-rootfs | pad-rootfs | append-metadata
+	DEFAULT := n
 endef
 TARGET_DEVICES += qcom_ap-dk01.1-c1
 
@@ -825,6 +886,7 @@ define Device/qcom_ap-dk04.1-c1
 	BLOCKSIZE := 128k
 	PAGESIZE := 2048
 	BOARD_NAME := ap-dk04.1-c1
+	DEFAULT := n
 endef
 TARGET_DEVICES += qcom_ap-dk04.1-c1
 
@@ -839,6 +901,7 @@ define Device/qxwlan_e2600ac-c1
 	IMAGE_SIZE := 31232k
 	IMAGE/sysupgrade.bin := append-kernel | append-rootfs | pad-rootfs | append-metadata
 	DEVICE_PACKAGES := ipq-wifi-qxwlan_e2600ac
+	DEFAULT := n
 endef
 TARGET_DEVICES += qxwlan_e2600ac-c1
 
@@ -866,6 +929,7 @@ define Device/unielec_u4019-32m
 	KERNEL_SIZE := 4096k
 	IMAGE_SIZE := 31232k
 	IMAGE/sysupgrade.bin := append-kernel | append-rootfs | pad-rootfs | append-metadata
+	DEFAULT := n
 endef
 TARGET_DEVICES += unielec_u4019-32m
 

@@ -25,7 +25,7 @@ DEFAULT_PACKAGES:=\
 	uci \
 	uclient-fetch \
 	urandom-seed \
-	luci luci-compat wget-ssl curl \
+	luci luci-compat wget-ssl curl ca-certificates htop \
 	default-settings luci-app-upnp luci-app-wol luci-app-vlmcsd luci-app-ramfree \
 	luci-app-ddns ddns-scripts-cloudflare ddns-scripts_aliyun ddns-scripts_dnspod \
 	luci-app-timecontrol luci-app-control-timewol luci-app-control-webrestriction luci-app-control-weburl \
@@ -35,6 +35,11 @@ ifneq ($(CONFIG_SELINUX),)
 DEFAULT_PACKAGES+=busybox-selinux procd-selinux
 else
 DEFAULT_PACKAGES+=busybox procd
+endif
+
+# include seccomp ld-preload hooks if kernel supports it
+ifneq ($(CONFIG_SECCOMP),)
+DEFAULT_PACKAGES+=procd-seccomp
 endif
 
 # For the basic set
